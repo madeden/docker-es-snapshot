@@ -21,29 +21,22 @@
 #
 # 
 #   1. Setup env variables
-#      a. S3_BUCKET is where the backup will be done
+#      a. ES_SNAPSHOT_NAME is the name of the ES snapshot repository  (created via script above)
 #      b. ES HOST and ES_PORT define URL of the AWS ES Cluster
 #      c. PATTERN defines the indices pattern to track. Defaults to logstash
 #      d. LOG_FILE defines the log file use. Note that this will be reset at each run. No need to change
 #      e. RETENTION defines the number of days of indices to keep
-#   2.a. In k8s, create a secret based on an AWS credential files
-#   2.b. In Docker "solo", create an AWS credentials file with the account you want to use
-#   3.a. (k8s): Launch with :
-#      kubectl create -f s3 k8s-incron_s3-rc.yaml
-#   3.b. (Docker) Launch with : 
-#      docker run --rm=true \
-#          -v /path/to/aws/credentials:/root/.aws/credentials \
-#          -v /path/to/folder/to/monitor:root/incron \
-#          -v /path/to/incron/file:/var/spool/incron/root \
-#          -e S3_BUCKET=<S3-bucket-name>
-#          samnco/docker-incron-s3
+#   2. In k8s, 
+#      a. If the version is <=1.2.4 then there are no cronjobs, and you need to operate with this. 
+#      b. If version is >1.3, then the cron should be removed from the Docker image, and this run as a cron
 # 
-# Now everytime the file mentioned in the incron file is modified (or other rules applying to it)
-# a version of the file with the date and time appended at the end will be uploaded in the S3
-# bucket. 
-# If the bucket doesn't exist on first execution, it will be created
+# Note the behavior of the container to tail the log is to keep it alive as cron does not run in foreground
 #
-# Testing: you can build the image and remove the commented "ADD" line and have something nearly automated
+# This version is primarily for AWS ElasticSearch hence Curator doesn't work (security endpoint doesn't allow
+# access to metadata). If you run a cluster yourself, you can definitely adapt by commenting and uncommenting 
+# in this Dockerfile. I provide the example curator configuration and actions to perform the same operation. Both
+# would need rendering with the same variables as above. 
+#
 #
 FROM ubuntu:16.04
 
@@ -60,7 +53,8 @@ ENV LOG_FILE=/var/log/es-backup.log
 ENV RETENTION=7
 
 RUN	${APT_CMD} update && \
-	${APT_CMD} install -yqq ${APT_FORCE} curl && \
+	${APT_CMD} install -yqq ${APT_FORCE} cron \
+		curl && \
 	${APT_CMD} clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Waiting for an update of AWS ES to activate this
@@ -80,11 +74,12 @@ COPY crontab /etc/cron.d/es-backup-daily
 # COPY curator.yaml /root/.curator/curator.yml
 # COPY actions.yaml /root/.curator/actions.yml
 
-RUN chmod 0644 /etc/cron.d/es-backup-daily
+RUN chmod 0644 /etc/cron.d/es-backup-daily && \
+	touch ${LOG_FILE}
 
 COPY run.sh /usr/bin/run.sh
 RUN chmod +x /usr/bin/run.sh
 
-CMD cron && tail -f /var/log/es-backup.log
+CMD /usr/sbin/cron && tail -f ${LOG_FILE}
 
 
