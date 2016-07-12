@@ -53,7 +53,8 @@ ENV LOG_FILE=/var/log/es-backup.log
 ENV RETENTION=7
 
 RUN	${APT_CMD} update && \
-	${APT_CMD} install -yqq ${APT_FORCE} cron \
+	${APT_CMD} install -yqq ${APT_FORCE} \
+		cron \
 		curl && \
 	${APT_CMD} clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -69,17 +70,16 @@ RUN	${APT_CMD} update && \
 
 # RUN mkdir -p /root/.curator
 
-# Add crontab file in the cron directory
-COPY crontab /etc/cron.d/es-backup-daily
+# Add crontab file
+RUN echo '00 9 * * * root /usr/bin/run.sh' >> /etc/crontab
 # COPY curator.yaml /root/.curator/curator.yml
 # COPY actions.yaml /root/.curator/actions.yml
 
-RUN chmod 0644 /etc/cron.d/es-backup-daily && \
-	touch ${LOG_FILE}
+RUN touch ${LOG_FILE}
 
 COPY run.sh /usr/bin/run.sh
 RUN chmod +x /usr/bin/run.sh
 
-CMD /usr/sbin/cron && tail -f ${LOG_FILE}
+CMD [ "cron", "-f" ]
 
 
