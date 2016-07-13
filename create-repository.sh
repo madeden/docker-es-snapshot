@@ -25,7 +25,7 @@ S3_LOG_BUCKET=$(jq '.s3Bucket' /root/.aws/aws.credentials.json | tr -d '"')
 sed -i -e "s#{{admin_aws_key_id}}#${AWS_ACCESS_KEY_ID}#g" \
     -e "s#{{admin_aws_secret_access_key}}#${AWS_SECRET_ACCESS_KEY}#g" \
     -e "s#{{region}}#${REGION}#g" \
-    -e "s#{{es_host}}#${ES_HOST}\:${ES_PORT}#g" \
+    -e "s#{{es_host}}#${ES_HOST}#g" \
     -e "s#{{snapshot_name}}#${ES_SNAPSHOT_NAME}#g" \
     -e "s#{{s3_log_bucket}}#${S3_LOG_BUCKET}#g" \
     -e "s#{{aws_account_id}}#${ACCOUNT_ID}#g" \
