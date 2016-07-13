@@ -81,6 +81,7 @@ RUN touch ${LOG_FILE} && \
 COPY run.sh /usr/bin/run.sh
 RUN chmod +x /usr/bin/run.sh
 
+COPY create-repository.py /root/create-repository.py
 COPY create-repository.sh /usr/bin/create-repository.sh
 RUN chmod +x /usr/bin/create-repository.sh
 
