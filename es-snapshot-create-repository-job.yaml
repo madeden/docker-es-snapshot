@@ -4,17 +4,17 @@ metadata:
   name: es-snapshot
   labels:
     component: es-snapshot
-    version: v0.2.0
+    version: v0.2.1
 spec:
   template:
     metadata:
       labels:
         component: es-snapshot
-        version: v0.2.0
+        version: v0.2.1
     spec:
       containers:
       - name: es-snapshot
-        image: quay.io/fsinvestments/es-snapshot:v0.2.0
+        image: quay.io/fsinvestments/es-snapshot:v0.2.1
         imagePullPolicy: IfNotPresent
         command: [ "/usr/bin/create-repository.sh" ]
         resources:
@@ -33,7 +33,7 @@ spec:
           value: "9200"
         volumeMounts:
         - name: es-snapshot-secret
-          mountPath: /root/
+          mountPath: /root/.aws
           readOnly: true
       volumes:
       - name: es-snapshot-secret
