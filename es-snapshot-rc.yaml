@@ -1,23 +1,23 @@
 apiVersion: v1
 kind: ReplicationController
 metadata:
-  name: es-snapshot
+  name: es-snapshot-v0.2.0
   labels:
     component: es-snapshot
-    version: v0.1.0
+    version: v0.2.0
 spec:
   selector:
     component: es-snapshot
-    version: v0.1.0
+    version: v0.2.0
   template:
     metadata:
       labels:
         component: es-snapshot
-        version: v0.1.0
+        version: v0.2.0
     spec:
       containers:
       - name: es-snapshot
-        image: samnco/es-snapshot:v0.1.0
+        image: samnco/es-snapshot:v0.2.0
         imagePullPolicy: IfNotPresent
         resources:
           requests:

@@ -17,7 +17,7 @@ spec:
       - name: es-snapshot
         image: quay.io/fsinvestments/es-snapshot:v0.2.0
         imagePullPolicy: IfNotPresent
-        command: [ "/usr/bin/run.sh" ]
+        command: [ "/usr/bin/create-repository.sh" ]
         resources:
           requests:
             cpu: "50m"
@@ -32,10 +32,12 @@ spec:
           value: localhost
         - name: ES_PORT
           value: "9200"
-        - name: PATTERN
-          value: logstash
-        - name: LOG_FILE
-          value: /var/log/es-backup.log
-        - name: RETENTION
-          value: "7"
+        volumeMounts:
+        - name: es-snapshot-secret
+          mountPath: /root/
+          readOnly: true
+      volumes:
+      - name: es-snapshot-secret
+        secret:
+          secretName: es-snapshot-secret
       restartPolicy: Never

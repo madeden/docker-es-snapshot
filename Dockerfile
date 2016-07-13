@@ -4,9 +4,7 @@
 # [this intro](https://medium.com/@rcdexta/periodic-snapshotting-of-elasticsearch-indices-f6b6ca221a0c#.ca8lifyif) to Curator
 # 
 # Usage: 
-# Before anything, read the blog and doc, and create the IAM Role and Policy, then render and run the attached python script from a location 
-# that can access the ES endpoint (depends on your security measures). Note that you will
-# need python-boto on the system to run this (apt install python-boto)
+# Before anything, read the blog and doc, and create the IAM Role and Policy, then populate the secret template and create-repository job file
 #
 # The following parameters must be rendered: 
 #
@@ -19,16 +17,18 @@
 # * {{aws_account_id}}: AWS Account ID
 # * {{aws_es_backup_role_name}}: Name of the role your created before
 #
+# The AWS credential files should be renamed aws.credentials.json
 # 
+# Now use the mksecret.sh script to create a secret file for Kubernetes, and publish it to the cluster
+#
+# Finally, run the create-repository job in the cluster to enable future backups
+#  
 #   1. Setup env variables
 #      a. ES_SNAPSHOT_NAME is the name of the ES snapshot repository  (created via script above)
 #      b. ES HOST and ES_PORT define URL of the AWS ES Cluster
 #      c. PATTERN defines the indices pattern to track. Defaults to logstash
 #      d. LOG_FILE defines the log file use. Note that this will be reset at each run. No need to change
 #      e. RETENTION defines the number of days of indices to keep
-#   2. In k8s, 
-#      a. If the version is <=1.2.4 then there are no cronjobs, and you need to operate with this. 
-#      b. If version is >1.3, then the cron should be removed from the Docker image, and this run as a cron
 # 
 # Note the behavior of the container to tail the log is to keep it alive as cron does not run in foreground
 #
@@ -55,7 +55,9 @@ ENV RETENTION=7
 RUN	${APT_CMD} update && \
 	${APT_CMD} install -yqq ${APT_FORCE} \
 		cron \
-		curl && \
+		curl \
+		jq \
+		python-boto && \
 	${APT_CMD} clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Waiting for an update of AWS ES to activate this
@@ -69,16 +71,20 @@ RUN	${APT_CMD} update && \
 # RUN pip install requests-aws4auth
 
 # RUN mkdir -p /root/.curator
-
-# Add crontab file
-RUN echo '00 9 * * * root /usr/bin/run.sh' >> /etc/crontab
 # COPY curator.yaml /root/.curator/curator.yml
 # COPY actions.yaml /root/.curator/actions.yml
 
-RUN touch ${LOG_FILE}
+# Add crontab file
+RUN touch ${LOG_FILE} && \ 
+	echo '00 9 * * * root /usr/bin/run.sh' >> /etc/crontab
 
 COPY run.sh /usr/bin/run.sh
 RUN chmod +x /usr/bin/run.sh
+
+COPY create-repository.sh /usr/bin/create-repository.sh
+RUN chmod +x /usr/bin/create-repository.sh
+
+COPY create-repository.py /root/create-repository.py
 
 CMD [ "cron", "-f" ]
 
