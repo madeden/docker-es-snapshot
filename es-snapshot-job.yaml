@@ -1,0 +1,49 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: es-snapshot
+  namespace: kube-system
+  labels:
+    component: es-snapshot
+    version: v0.1.1
+spec:
+  template:
+    metadata:
+      labels:
+        component: es-snapshot
+        version: v0.1.1
+    spec:
+      containers:
+      - name: es-snapshot
+        image: quay.io/fsinvestments/es-snapshot:v0.1.1
+        imagePullPolicy: IfNotPresent
+        command: [ "/usr/bin/run.sh" ]
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "32Mi"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+        env:
+        - name: ES_SNAPSHOT_NAME
+          value: "es-s3-backup"
+        - name: ES_HOST
+          value: localhost
+        - name: ES_PORT
+          value: "9200"
+        - name: PATTERN
+          value: logstash
+        - name: LOG_FILE
+          value: /var/log/es-backup.log
+        - name: RETENTION
+          value: "7"
+        volumeMounts:
+        - mountPath: /var/log
+          name: var-log
+      imagePullSecrets:
+        - name: quayio-fs
+      volumes:
+          - emptyDir:
+              medium: ""
+            name: "var-log"
